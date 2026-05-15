@@ -1,16 +1,20 @@
 const express = require("express");
+const cors = require("cors");
+require("dotenv").config();
+
 const app = express();
 
-const port = process.env.PORT || 5000;
+app.use(cors());
+app.use(express.json());
 
-app.get("/", (req, res) => {
-  return res.status(200).send({
-    message: "Hello World!",
-  });
+// Route de test
+app.get("/api/ping", (req, res) => {
+  res.json({ message: "Backend OK !" });
 });
 
+const port = process.env.PORT || 5000;
 app.listen(port, () => {
-  console.log("Listening on " + port);
+  console.log("Serveur lancé sur http://localhost:" + port);
 });
 
 module.exports = app;
