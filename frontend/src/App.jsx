@@ -3,6 +3,8 @@ import Login from "./pages/Login";
 import Register from "./pages/Register";
 import Dashboard from "./pages/Dashboard";
 import ProtectedRoute from "./components/ProtectedRoute";
+import Maps from "./pages/Maps";
+import Game from "./pages/Game";
 
 function App() {
   return (
@@ -15,6 +17,22 @@ function App() {
           element={
             <ProtectedRoute>
               <Dashboard />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/maps"
+          element={
+            <ProtectedRoute>
+              <Maps />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/play/:id"
+          element={
+            <ProtectedRoute>
+              <Game />
             </ProtectedRoute>
           }
         />

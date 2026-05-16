@@ -26,4 +26,10 @@ app.listen(port, () => {
   console.log("Serveur lancé sur http://localhost:" + port);
 });
 
+const mapsRoutes = require("./routes/maps");
+app.use("/api/maps", mapsRoutes);
+
+const scoresRoutes = require("./routes/scores");
+app.use("/api/scores", scoresRoutes);
+
 module.exports = app;

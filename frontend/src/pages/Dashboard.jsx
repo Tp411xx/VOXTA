@@ -14,6 +14,7 @@ function Dashboard() {
     <div>
       <h1>Bienvenue {user?.username} !</h1>
       <p>Rôle : {user?.role}</p>
+      <button onClick={() => navigate("/maps")}>Voir les maps</button>;
       <button onClick={handleLogout}>Se déconnecter</button>
     </div>
   );
