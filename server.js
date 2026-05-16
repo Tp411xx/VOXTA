@@ -7,9 +7,18 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
+const authRoutes = require("./routes/auth");
+app.use("/api/auth", authRoutes);
+
 // Route de test
 app.get("/api/ping", (req, res) => {
   res.json({ message: "Backend OK !" });
+});
+
+const authMiddleware = require("./middlewares/auth");
+
+app.get("/api/me", authMiddleware, (req, res) => {
+  res.json({ message: "Connecté !", user: req.user });
 });
 
 const port = process.env.PORT || 5000;
