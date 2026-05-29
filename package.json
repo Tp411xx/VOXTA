@@ -4,6 +4,7 @@
   "private": "true",
   "main": "server.js",
   "scripts": {
+    "db:setup": "node scripts/setup-db.js",
     "test": "mocha --exit tests/*",
     "start": "node server.js"
   },

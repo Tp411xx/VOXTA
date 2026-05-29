@@ -57,5 +57,8 @@ typings/
 # dotenv environment variables file
 .env
 
+# Local recovery notes can contain sensitive setup details.
+RECOVERY.md
+
 # next.js build output
 .next

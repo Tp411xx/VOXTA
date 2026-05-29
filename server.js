@@ -10,7 +10,6 @@ app.use(express.json());
 const authRoutes = require("./routes/auth");
 app.use("/api/auth", authRoutes);
 
-// Route de test
 app.get("/api/ping", (req, res) => {
   res.json({ message: "Backend OK !" });
 });
@@ -18,12 +17,14 @@ app.get("/api/ping", (req, res) => {
 const authMiddleware = require("./middlewares/auth");
 
 app.get("/api/me", authMiddleware, (req, res) => {
-  res.json({ message: "Connecté !", user: req.user });
+  res.json({ message: "Connecte !", user: req.user });
 });
 
-const port = process.env.PORT || 5000;
-app.listen(port, () => {
-  console.log("Serveur lancé sur http://localhost:" + port);
+const port = process.env.PORT || 5001;
+const host = process.env.HOST || "0.0.0.0";
+
+app.listen(port, host, () => {
+  console.log(`Serveur lance sur http://${host}:${port}`);
 });
 
 const mapsRoutes = require("./routes/maps");
@@ -31,5 +32,8 @@ app.use("/api/maps", mapsRoutes);
 
 const scoresRoutes = require("./routes/scores");
 app.use("/api/scores", scoresRoutes);
+
+const adminRoutes = require("./routes/admin");
+app.use("/api/admin", adminRoutes);
 
 module.exports = app;

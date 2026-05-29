@@ -51,6 +51,10 @@ router.post("/login", async (req, res) => {
       return res.status(401).json({ error: "Utilisateur introuvable" });
     }
 
+    if (user.role === "DISABLED") {
+      return res.status(403).json({ error: "Compte desactive" });
+    }
+
     const valid = await bcrypt.compare(password, user.password);
 
     if (!valid) {

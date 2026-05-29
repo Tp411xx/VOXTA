@@ -5,11 +5,40 @@ const authMiddleware = require("../middlewares/auth");
 
 // Lister les maps approuvées
 router.get("/", async (req, res) => {
+  const userId = req.query.userId;
   try {
-    const result = await pool.query(
-      "SELECT maps.*, users.username as author FROM maps JOIN users ON maps.author_id = users.id WHERE maps.status = $1 ORDER BY maps.created_at DESC",
-      ["APPROVED"],
-    );
+    let query;
+    let params;
+
+    if (userId) {
+      query = `
+        SELECT maps.*, users.username as author,
+          best.best_score,
+          best.nb_parties
+        FROM maps
+        JOIN users ON maps.author_id = users.id
+        LEFT JOIN (
+          SELECT map_id, MAX(score) as best_score, COUNT(*) as nb_parties
+          FROM scores
+          WHERE user_id = $1
+          GROUP BY map_id
+        ) best ON best.map_id = maps.id
+        WHERE maps.status = 'APPROVED'
+        ORDER BY maps.created_at DESC
+      `;
+      params = [userId];
+    } else {
+      query = `
+        SELECT maps.*, users.username as author
+        FROM maps
+        JOIN users ON maps.author_id = users.id
+        WHERE maps.status = 'APPROVED'
+        ORDER BY maps.created_at DESC
+      `;
+      params = [];
+    }
+
+    const result = await pool.query(query, params);
     res.json(result.rows);
   } catch (err) {
     res.status(500).json({ error: "Erreur serveur" });
