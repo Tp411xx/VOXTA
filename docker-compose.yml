@@ -13,7 +13,7 @@ services:
       - "127.0.0.1:5433:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
-      - ./database/init.sql:/docker-entrypoint-initdb.d/01-init.sql:ro
+      - ./backend/database/init.sql:/docker-entrypoint-initdb.d/01-init.sql:ro
 
   pgadmin:
     image: dpage/pgadmin4:latest

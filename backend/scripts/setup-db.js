@@ -2,7 +2,7 @@ const fs = require("fs");
 const path = require("path");
 const { Pool } = require("pg");
 const bcrypt = require("bcrypt");
-require("dotenv").config({ quiet: true });
+require("../config/env");
 
 const requiredEnv = ["DB_HOST", "DB_PORT", "DB_NAME", "DB_USER", "DB_PASSWORD"];
 const missingEnv = requiredEnv.filter((key) => !process.env[key]);

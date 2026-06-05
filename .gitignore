@@ -57,6 +57,9 @@ typings/
 # dotenv environment variables file
 .env
 
+# Database backups
+*.dump
+
 # Local recovery notes can contain sensitive setup details.
 RECOVERY.md
 

@@ -2,9 +2,10 @@
 
 ## 1. Lancer le backend
 
-Dans un terminal, depuis `C:\CODA\VOXTA` :
+Dans un terminal, depuis `C:\CODA\VOXTA\backend` :
 
 ```powershell
+cd C:\CODA\VOXTA\backend
 npm.cmd start
 ```
 
