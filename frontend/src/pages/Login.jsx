@@ -1,11 +1,12 @@
 import { useState } from "react";
 import axios from "axios";
-import { useNavigate, Link } from "react-router-dom";
+import { useNavigate, Link, useLocation } from "react-router-dom";
 
 function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [error, setError] = useState("");
+  const location = useLocation();
+  const [error, setError] = useState(location.state?.error || "");
   const navigate = useNavigate();
 
   const handleSubmit = async (e) => {

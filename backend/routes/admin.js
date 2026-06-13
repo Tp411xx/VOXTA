@@ -65,10 +65,19 @@ router.patch(
   adminOnly,
   async (req, res) => {
     try {
-      await pool.query("UPDATE users SET role = $1 WHERE id = $2", [
-        "DISABLED",
-        req.params.id,
-      ]);
+      const result = await pool.query(
+        "UPDATE users SET role = $1 WHERE id = $2 RETURNING id",
+        ["DISABLED", req.params.id],
+      );
+
+      if (result.rowCount === 0) {
+        return res.status(404).json({ error: "Utilisateur introuvable" });
+      }
+
+      req.app.get("io")?.to(`user:${result.rows[0].id}`).emit("user-disabled", {
+        message: "Votre compte a ete desactive",
+      });
+
       res.json({ message: "Utilisateur désactivé" });
     } catch (err) {
       res.status(500).json({ error: "Erreur serveur" });

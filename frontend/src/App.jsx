@@ -3,6 +3,7 @@ import Login from "./pages/Login";
 import Register from "./pages/Register";
 import Dashboard from "./pages/Dashboard";
 import ProtectedRoute from "./components/ProtectedRoute";
+import BanListener from "./components/BanListener";
 import Maps from "./pages/Maps";
 import Game from "./pages/Game";
 import Admin from "./pages/Admin";
@@ -10,6 +11,7 @@ import Admin from "./pages/Admin";
 function App() {
   return (
     <BrowserRouter>
+      <BanListener />
       <Routes>
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
