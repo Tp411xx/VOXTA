@@ -7,6 +7,7 @@ import BanListener from "./components/BanListener";
 import Maps from "./pages/Maps";
 import Game from "./pages/Game";
 import Admin from "./pages/Admin";
+import ImportMap from "./pages/ImportMap";
 
 function App() {
   return (
@@ -28,6 +29,14 @@ function App() {
           element={
             <ProtectedRoute>
               <Maps />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/maps/import"
+          element={
+            <ProtectedRoute>
+              <ImportMap />
             </ProtectedRoute>
           }
         />

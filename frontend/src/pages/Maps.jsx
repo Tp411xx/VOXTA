@@ -23,7 +23,10 @@ function Maps() {
         }}
       >
         <h1>Bibliothèque de maps</h1>
-        <button onClick={() => navigate("/dashboard")}>Dashboard</button>
+        <div style={{ display: "flex", gap: "10px" }}>
+          <button onClick={() => navigate("/maps/import")}>Importer</button>
+          <button onClick={() => navigate("/dashboard")}>Dashboard</button>
+        </div>
       </div>
       {maps.length === 0 && <p>Aucune map disponible</p>}
       {maps.map((map) => (

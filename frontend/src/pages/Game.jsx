@@ -5,15 +5,15 @@ import * as Tone from "tone";
 import { useParams, useNavigate } from "react-router-dom";
 import axios from "axios";
 
-const LANES = 5;
+const LANES = 4;
 const LANE_WIDTH = 120;
 const CANVAS_HEIGHT = 600;
 const NOTE_SPEED = 300;
 const HIT_ZONE_Y = CANVAS_HEIGHT - 80;
 const HIT_TOLERANCE = 0.12;
-const KEYS = ["d", "f", " ", "j", "k"];
-const KEY_LABELS = ["D", "F", "SPACE", "J", "K"];
-const COLORS = [0x4fc3f7, 0x81c784, 0xffffff, 0xffb74d, 0xf06292];
+const KEYS = ["d", "f", "j", "k"];
+const KEY_LABELS = ["D", "F", "J", "K"];
+const COLORS = [0x4fc3f7, 0x81c784, 0xffb74d, 0xf06292];
 
 function Game() {
   const { id } = useParams();
@@ -22,8 +22,10 @@ function Game() {
   const appRef = useRef(null);
   const playerRef = useRef(null);
   const keyHandlerRef = useRef(null);
+  const keyUpHandlerRef = useRef(null);
   const tickerHandlerRef = useRef(null);
   const notesRef = useRef([]);
+  const activeHoldsRef = useRef(new Map());
   const scoreRef = useRef({ score: 0, perfects: 0, goods: 0, misses: 0 });
   const gameOverRef = useRef(false);
   const [displayScore, setDisplayScore] = useState(0);
@@ -33,10 +35,15 @@ function Game() {
   const [started, setStarted] = useState(false);
 
   const removeKeyboardListener = () => {
-    if (!keyHandlerRef.current) return;
+    if (keyHandlerRef.current) {
+      window.removeEventListener("keydown", keyHandlerRef.current);
+      keyHandlerRef.current = null;
+    }
 
-    window.removeEventListener("keydown", keyHandlerRef.current);
-    keyHandlerRef.current = null;
+    if (keyUpHandlerRef.current) {
+      window.removeEventListener("keyup", keyUpHandlerRef.current);
+      keyUpHandlerRef.current = null;
+    }
   };
 
   // Charger la map et repartir d'un etat propre a chaque navigation.
@@ -51,6 +58,7 @@ function Game() {
     gameOverRef.current = false;
     scoreRef.current = { score: 0, perfects: 0, goods: 0, misses: 0 };
     notesRef.current = [];
+    activeHoldsRef.current.clear();
     removeKeyboardListener();
 
     axios
@@ -112,18 +120,44 @@ function Game() {
 
     // Preparer les notes.
     notesRef.current = notes.map((note) => {
+      const laneFromNote = Number.isFinite(Number(note.lane))
+        ? Number(note.lane)
+        : Number(note.id) - 1;
+      const lane = Number.isInteger(laneFromNote) ? laneFromNote : -1;
+      const time = Number(note.time);
+      const holdSeconds = Math.max(
+        0,
+        Number(note.sLen ?? note.duration ?? note.holdTime ?? 0),
+      );
+
+      if (lane < 0 || lane >= LANES || !Number.isFinite(time)) {
+        return null;
+      }
+
+      const noteHeight = Math.max(20, 20 + holdSeconds * NOTE_SPEED);
       const g = new PIXI.Graphics();
-      g.beginFill(COLORS[note.lane] ?? 0xffffff);
-      g.drawRoundedRect(0, 0, LANE_WIDTH - 10, 20, 5);
+      g.beginFill(COLORS[lane] ?? 0xffffff);
+      g.drawRoundedRect(0, -noteHeight + 20, LANE_WIDTH - 10, noteHeight, 5);
       g.endFill();
-      g.x = note.lane * LANE_WIDTH + 5;
+      g.x = lane * LANE_WIDTH + 5;
       g.y = -30;
       g.visible = false;
       app.stage.addChild(g);
-      return { ...note, sprite: g, hit: false };
-    });
+      return {
+        ...note,
+        lane,
+        time,
+        sLen: holdSeconds,
+        renderHeight: noteHeight,
+        sprite: g,
+        hit: false,
+        started: false,
+      };
+    }).filter(Boolean);
 
-    playerRef.current = new Tone.Player("/song.mp3").toDestination();
+    playerRef.current = new Tone.Player(
+      mapData.audio_src || mapData.audioSrc || "/song.mp3",
+    ).toDestination();
 
     return () => {
       Tone.Transport.stop();
@@ -160,7 +194,46 @@ function Game() {
     playerRef.current.sync().start(0);
 
     const lastNoteTime =
-      noteSprites.length > 0 ? Math.max(...noteSprites.map((n) => n.time)) : 0;
+      noteSprites.length > 0
+        ? Math.max(...noteSprites.map((n) => n.time + n.sLen))
+        : 0;
+
+    const finishNote = (note, text, points) => {
+      if (note.hit) return;
+
+      note.hit = true;
+      note.sprite.visible = false;
+      activeHoldsRef.current.delete(note.lane);
+
+      if (text === "Perfect!") {
+        scoreRef.current.perfects++;
+      } else {
+        scoreRef.current.goods++;
+      }
+
+      scoreRef.current.score += points;
+      showJudgment(text);
+      setDisplayScore(scoreRef.current.score);
+    };
+
+    const missNote = (note) => {
+      if (note.hit) return;
+
+      note.hit = true;
+      note.sprite.visible = false;
+      activeHoldsRef.current.delete(note.lane);
+      scoreRef.current.misses++;
+      showJudgment("Miss");
+    };
+
+    const completeHold = (note, endDiff = 0) => {
+      const diff = Math.max(note.startDiff ?? 0, endDiff);
+      if (diff <= HIT_TOLERANCE) {
+        finishNote(note, "Perfect!", 400);
+      } else {
+        finishNote(note, "Good", 150);
+      }
+    };
 
     const tickerHandler = () => {
       if (gameOverRef.current) return;
@@ -171,12 +244,26 @@ function Game() {
         const timeUntilHit = note.time - now;
         const y = HIT_ZONE_Y - timeUntilHit * NOTE_SPEED;
         note.sprite.y = y;
-        note.sprite.visible = y > -30 && y < CANVAS_HEIGHT;
+        note.sprite.visible =
+          y > -note.renderHeight - 30 && y < CANVAS_HEIGHT + 30;
 
-        if (timeUntilHit < -HIT_TOLERANCE && !note.hit) {
-          note.hit = true;
-          scoreRef.current.misses++;
-          showJudgment("Miss");
+        if (note.sLen > 0) {
+          const endTime = note.time + note.sLen;
+
+          if (!note.started && timeUntilHit < -HIT_TOLERANCE) {
+            missNote(note);
+            return;
+          }
+
+          if (note.started && now >= endTime - HIT_TOLERANCE) {
+            completeHold(note, Math.abs(endTime - now));
+          }
+
+          return;
+        }
+
+        if (timeUntilHit < -HIT_TOLERANCE) {
+          missNote(note);
         }
       });
 
@@ -188,7 +275,7 @@ function Game() {
     app.ticker.add(tickerHandler);
 
     const handleKey = (e) => {
-      if (gameOverRef.current) return;
+      if (gameOverRef.current || e.repeat) return;
       const laneIndex = KEYS.indexOf(e.key.toLowerCase());
       if (laneIndex === -1) return;
 
@@ -198,7 +285,7 @@ function Game() {
       let closest = null;
       let minDiff = Infinity;
       notesRef.current.forEach((note) => {
-        if (note.hit || note.lane !== laneIndex) return;
+        if (note.hit || note.started || note.lane !== laneIndex) return;
         const diff = Math.abs(note.time - now);
         if (diff < minDiff) {
           minDiff = diff;
@@ -207,23 +294,42 @@ function Game() {
       });
 
       if (closest && minDiff <= HIT_TOLERANCE * 2) {
-        closest.hit = true;
-        closest.sprite.visible = false;
-        if (minDiff <= HIT_TOLERANCE) {
-          scoreRef.current.perfects++;
-          scoreRef.current.score += 300;
-          showJudgment("Perfect!");
+        if (closest.sLen > 0) {
+          closest.started = true;
+          closest.startDiff = minDiff;
+          activeHoldsRef.current.set(laneIndex, closest);
+          showJudgment("Hold");
+        } else if (minDiff <= HIT_TOLERANCE) {
+          finishNote(closest, "Perfect!", 300);
         } else {
-          scoreRef.current.goods++;
-          scoreRef.current.score += 100;
-          showJudgment("Good");
+          finishNote(closest, "Good", 100);
         }
-        setDisplayScore(scoreRef.current.score);
+      }
+    };
+
+    const handleKeyUp = (e) => {
+      if (gameOverRef.current) return;
+      const laneIndex = KEYS.indexOf(e.key.toLowerCase());
+      if (laneIndex === -1) return;
+
+      const note = activeHoldsRef.current.get(laneIndex);
+      if (!note || note.hit) return;
+
+      e.preventDefault();
+      const now = Tone.Transport.seconds;
+      const endTime = note.time + note.sLen;
+
+      if (now < endTime - HIT_TOLERANCE) {
+        missNote(note);
+      } else {
+        completeHold(note, Math.abs(endTime - now));
       }
     };
 
     keyHandlerRef.current = handleKey;
+    keyUpHandlerRef.current = handleKeyUp;
     window.addEventListener("keydown", handleKey);
+    window.addEventListener("keyup", handleKeyUp);
   };
 
   const showJudgment = (text) => {
@@ -284,7 +390,9 @@ function Game() {
               ? "gold"
               : judgment === "Good"
                 ? "lightgreen"
-                : "red",
+                : judgment === "Hold"
+                  ? "#4fc3f7"
+                  : "red",
         }}
       >
         {judgment}

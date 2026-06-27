@@ -90,7 +90,12 @@ async function main() {
 
   await ensureDatabaseExists();
   await pool.query(initSql);
-  await createOrUpdateAdmin();
+  try {
+    await createOrUpdateAdmin();
+  } catch (error) {
+    console.warn("Schema OK. Admin automatique non cree ou non mis a jour.");
+    console.warn(error.message);
+  }
 }
 
 main()

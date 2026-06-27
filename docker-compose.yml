@@ -38,6 +38,7 @@ services:
     env_file:
       - .env
     environment:
+      HOST: 0.0.0.0
       DB_HOST: postgres
       DB_PORT: 5432
     ports:
@@ -50,6 +51,8 @@ services:
     build: ./frontend
     container_name: voxta_frontend
     restart: always
+    environment:
+      VITE_API_PROXY_TARGET: http://backend:5001
     ports:
       - "5173:5173"
     depends_on:

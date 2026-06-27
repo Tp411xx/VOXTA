@@ -70,6 +70,12 @@ function Dashboard() {
           >
             Jouer
           </button>
+          <button
+            onClick={() => navigate("/maps/import")}
+            style={{ marginRight: "10px" }}
+          >
+            Importer
+          </button>
           <button onClick={handleLogout}>Se déconnecter</button>
         </div>
       </div>

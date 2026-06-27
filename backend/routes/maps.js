@@ -2,6 +2,10 @@ const express = require("express");
 const router = express.Router();
 const pool = require("../db");
 const authMiddleware = require("../middlewares/auth");
+const {
+  ChartImportError,
+  normalizeMapImport,
+} = require("../services/chartImporter");
 
 // Lister les maps approuvées
 router.get("/", async (req, res) => {
@@ -70,6 +74,39 @@ router.post("/", authMiddleware, async (req, res) => {
     );
     res.status(201).json(result.rows[0]);
   } catch (err) {
+    res.status(500).json({ error: "Erreur serveur" });
+  }
+});
+
+router.post("/import", authMiddleware, async (req, res) => {
+  try {
+    const map = normalizeMapImport(req.body);
+    const result = await pool.query(
+      `
+        INSERT INTO maps (
+          title, bpm, author_id, notes, audio_src, key_count, note_count, status
+        )
+        VALUES ($1, $2, $3, $4::jsonb, $5, $6, $7, $8)
+        RETURNING *
+      `,
+      [
+        map.title,
+        map.bpm,
+        req.user.id,
+        JSON.stringify(map.notes),
+        map.audioSrc,
+        map.keyCount,
+        map.noteCount,
+        "PENDING",
+      ],
+    );
+
+    res.status(201).json(result.rows[0]);
+  } catch (err) {
+    if (err instanceof ChartImportError) {
+      return res.status(err.status).json({ error: err.message });
+    }
+
     res.status(500).json({ error: "Erreur serveur" });
   }
 });

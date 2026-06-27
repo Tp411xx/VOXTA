@@ -120,7 +120,8 @@ function Admin() {
                 <div>
                   <strong>{map.title}</strong>
                   <span style={{ marginLeft: "10px", color: "#aaa" }}>
-                    BPM : {map.bpm} | Auteur : {map.author}
+                    BPM : {map.bpm} | Auteur : {map.author} | Notes :{" "}
+                    {map.note_count ?? map.notes?.length ?? 0}
                   </span>
                 </div>
                 <div
@@ -134,6 +135,18 @@ function Admin() {
                   >
                     {map.status}
                   </span>
+                  <button
+                    onClick={() => navigate(`/play/${map.id}`)}
+                    style={{
+                      background: "#4fc3f7",
+                      border: "none",
+                      borderRadius: "4px",
+                      padding: "4px 10px",
+                      cursor: "pointer",
+                    }}
+                  >
+                    Tester
+                  </button>
                   {map.status !== "APPROVED" && (
                     <button
                       onClick={() => updateMapStatus(map.id, "APPROVED")}
