@@ -33,6 +33,7 @@ function Game() {
   const [gameOver, setGameOver] = useState(false);
   const [mapData, setMapData] = useState(null);
   const [started, setStarted] = useState(false);
+  const [stats, setStats] = useState({ perfects: 0, goods: 0, misses: 0 });
 
   const removeKeyboardListener = () => {
     if (keyHandlerRef.current) {
@@ -55,6 +56,7 @@ function Game() {
     setGameOver(false);
     setDisplayScore(0);
     setJudgment("");
+    setStats({ perfects: 0, goods: 0, misses: 0 });
     gameOverRef.current = false;
     scoreRef.current = { score: 0, perfects: 0, goods: 0, misses: 0 };
     notesRef.current = [];
@@ -214,6 +216,11 @@ function Game() {
       scoreRef.current.score += points;
       showJudgment(text);
       setDisplayScore(scoreRef.current.score);
+      setStats({
+        perfects: scoreRef.current.perfects,
+        goods: scoreRef.current.goods,
+        misses: scoreRef.current.misses,
+      });
     };
 
     const missNote = (note) => {
@@ -224,6 +231,11 @@ function Game() {
       activeHoldsRef.current.delete(note.lane);
       scoreRef.current.misses++;
       showJudgment("Miss");
+      setStats({
+        perfects: scoreRef.current.perfects,
+        goods: scoreRef.current.goods,
+        misses: scoreRef.current.misses,
+      });
     };
 
     const completeHold = (note, endDiff = 0) => {
@@ -358,66 +370,96 @@ function Game() {
 
   if (gameOver)
     return (
-      <div style={{ textAlign: "center", padding: "40px" }}>
-        <h1>Partie terminee !</h1>
-        <p>Score : {scoreRef.current.score}</p>
-        <p>
-          Perfect : {scoreRef.current.perfects} | Good :{" "}
-          {scoreRef.current.goods} | Miss : {scoreRef.current.misses}
-        </p>
-        <button onClick={() => navigate("/maps")}>Retour aux maps</button>
+      <div className="game-page-container game-results-page">
+        <div className="game-results-card">
+          <span className="results-label">PARTIE TERMINÉE</span>
+          <h1 className="results-title">{mapData?.title}</h1>
+          
+          <div className="results-score-box">
+            <span className="results-score-label">SCORE FINAL</span>
+            <span className="results-score-value">{scoreRef.current.score}</span>
+          </div>
+
+          <div className="results-stats-grid">
+            <div className="results-stat-item perfect">
+              <span className="results-stat-name">PERFECT</span>
+              <span className="results-stat-count">{scoreRef.current.perfects}</span>
+            </div>
+            <div className="results-stat-item good">
+              <span className="results-stat-name">GOOD</span>
+              <span className="results-stat-count">{scoreRef.current.goods}</span>
+            </div>
+            <div className="results-stat-item miss">
+              <span className="results-stat-name">MISS</span>
+              <span className="results-stat-count">{scoreRef.current.misses}</span>
+            </div>
+          </div>
+
+          <div className="results-actions">
+            <button className="results-btn primary" onClick={() => window.location.reload()}>
+              Rejouer
+            </button>
+            <button className="results-btn secondary" onClick={() => navigate("/maps")}>
+              Retour aux maps
+            </button>
+          </div>
+        </div>
       </div>
     );
 
   return (
-    <div
-      style={{
-        display: "flex",
-        flexDirection: "column",
-        alignItems: "center",
-        padding: "20px",
-      }}
-    >
-      <h2>{mapData?.title}</h2>
-      <p>Score : {displayScore}</p>
-      <p
-        style={{
-          fontSize: "24px",
-          fontWeight: "bold",
-          minHeight: "30px",
-          color:
-            judgment === "Perfect!"
-              ? "gold"
-              : judgment === "Good"
-                ? "lightgreen"
-                : judgment === "Hold"
-                  ? "#4fc3f7"
-                  : "red",
-        }}
-      >
-        {judgment}
-      </p>
-      {!started && mapData && (
-        <button
-          onClick={startGame}
-          style={{
-            fontSize: "20px",
-            padding: "10px 30px",
-            marginBottom: "20px",
-            cursor: "pointer",
-          }}
-        >
-          Lancer la partie
-        </button>
-      )}
-      <div
-        ref={gameAreaRef}
-        style={{
-          width: `${LANES * LANE_WIDTH}px`,
-          height: `${CANVAS_HEIGHT}px`,
-          border: "1px solid #444",
-        }}
-      />
+    <div className="game-page-container">
+      <div className="game-sidebar">
+        <div className="game-sidebar-content">
+          <button className="game-back-btn" onClick={() => navigate("/maps")}>
+            ← Retour aux maps
+          </button>
+          
+          <div className="game-meta">
+            <span className="game-meta-label">MAPPING EN COURS</span>
+            <h2 className="game-map-title">{mapData?.title}</h2>
+            <span className="game-meta-author">BPM : {mapData?.bpm}</span>
+          </div>
+
+          <div className="game-stats-panel">
+            <div className="game-stat-box">
+              <span className="game-stat-label">SCORE</span>
+              <span className="game-stat-value score-val">{displayScore}</span>
+            </div>
+
+            <div className="game-hit-stats">
+              <div className="game-hit-row perfect">
+                <span className="game-hit-label">PERFECT</span>
+                <span className="game-hit-count">{stats.perfects}</span>
+              </div>
+              <div className="game-hit-row good">
+                <span className="game-hit-label">GOOD</span>
+                <span className="game-hit-count">{stats.goods}</span>
+              </div>
+              <div className="game-hit-row miss">
+                <span className="game-hit-label">MISS</span>
+                <span className="game-hit-count">{stats.misses}</span>
+              </div>
+            </div>
+          </div>
+
+          <div className="game-judgment-container">
+            <div className={`game-judgment-display ${judgment ? judgment.toLowerCase().replace('!', '') : ''}`}>
+              {judgment || "READY"}
+            </div>
+          </div>
+
+          {!started && mapData && (
+            <button className="game-start-btn" onClick={startGame}>
+              Lancer la partie
+            </button>
+          )}
+        </div>
+      </div>
+
+      <div className="game-viewport">
+        <div ref={gameAreaRef} className="game-canvas-wrapper" />
+      </div>
     </div>
   );
 }

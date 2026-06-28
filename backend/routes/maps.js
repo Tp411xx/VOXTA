@@ -111,4 +111,34 @@ router.post("/import", authMiddleware, async (req, res) => {
   }
 });
 
+router.post("/launch-engine", authMiddleware, async (req, res) => {
+  // L'exe tourne sur la machine hôte Windows.
+  // engine-launcher.js doit être lancé sur l'hôte : node engine-launcher.js
+  // Docker accède à l'hôte via host.docker.internal (ou 172.17.0.1 en fallback).
+  const hosts = [
+    "http://host.docker.internal:9876/launch",
+    "http://172.17.0.1:9876/launch",
+  ];
+
+  for (const url of hosts) {
+    try {
+      const response = await fetch(url, {
+        method: "POST",
+        signal: AbortSignal.timeout(3000),
+      });
+      if (response.ok) {
+        const data = await response.json();
+        return res.json({ message: data.message || "CodenameEngine lancé !" });
+      }
+    } catch (_) {
+      // essai suivant
+    }
+  }
+
+  return res.status(503).json({
+    error:
+      "Impossible de joindre le lanceur local. Lancez engine-launcher.js sur votre machine Windows : node engine-launcher.js",
+  });
+});
+
 module.exports = router;
